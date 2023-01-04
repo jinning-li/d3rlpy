@@ -374,7 +374,7 @@ def get_dataset(env_name: str) -> Tuple[MDPDataset, gym.Env]:
         return get_pendulum(dataset_type="random")
     elif re.match(r"^bullet-.+$", env_name):
         return get_d4rl(env_name)
-    elif re.match(r"hopper|halfcheetah|walker|ant", env_name):
+    elif re.match(r"hopper|halfcheetah|walker|ant|hammer|pen|door|relocate", env_name):
         return get_d4rl(env_name)
     elif re.match(re.compile("|".join(ATARI_GAMES)), env_name):
         return get_atari(env_name)
