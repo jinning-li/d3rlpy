@@ -106,7 +106,7 @@ class CEM:
         :param terminal_state_cost: function(state) -> cost (K x 1) taking in batch state
         """
         self.d = device
-        self.dtype = torch.double  # TODO determine dtype
+        self.dtype = torch.float32  # TODO determine dtype
         self.K = num_samples  # N_SAMPLES
         self.T = horizon  # TIMESTEPS
         self.M = num_iterations
@@ -210,11 +210,11 @@ class CEM:
     def command(self, state, choose_best=False):
         if not torch.is_tensor(state):
             state = torch.tensor(state)
-        state = state.to(dtype=self.dtype, device=self.d)
+        # state = state.to(dtype=self.dtype, device=self.d)
 
         if len(state.shape) == 1:
             state = state.unsqueeze(0)
-        assert len(state.shape) == 2  # state.shape = (batch_size, K, obs_dim)
+        assert len(state.shape) == 2  # state.shape = (batch_size, obs_dim)
         self.batch_size = state.shape[0]
 
         self.reset()

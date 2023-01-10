@@ -77,9 +77,6 @@ class QLCEMBaseImpl(ContinuousQFunctionMixin, TorchImplBase, metaclass=ABCMeta):
         self._cem = None
 
     def build(self) -> None:
-        # setup CEM
-        self._build_cem()
-
         # setup torch models
         self._build_critic()
 
@@ -94,18 +91,21 @@ class QLCEMBaseImpl(ContinuousQFunctionMixin, TorchImplBase, metaclass=ABCMeta):
         # setup optimizer after the parameters move to GPU
         self._build_critic_optim()
 
+        self._build_cem()
+
     def _build_cem(self) -> None:
         assert len(self.observation_shape) == 1
+        assert self._q_func is not None
         self._cem = CEM(
             None, 
             self._q_func,  
             self.observation_shape[0], 
             self.action_size, 
-            num_samples=100, 
-            num_iterations=100,
+            num_samples=50, 
+            num_iterations=50,
+            num_elite=5,
             horizon=1, 
-            device=self.device, 
-            num_elite=10,
+            device=self._device, 
             u_max=torch.tensor(1, dtype=torch.double, device=self.device), 
             u_min=torch.tensor(-1, dtype=torch.double, device=self.device),
             init_cov_diag=1,
@@ -165,7 +165,6 @@ class QLCEMBaseImpl(ContinuousQFunctionMixin, TorchImplBase, metaclass=ABCMeta):
         assert self._cem is not None
         with torch.no_grad():
             best_ac = self._cem.command(x)
-            import pdb;pdb.set_trace()
         return best_ac
 
 
