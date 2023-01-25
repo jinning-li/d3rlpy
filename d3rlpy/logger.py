@@ -136,13 +136,13 @@ class D3RLPyLogger:
                 metrics=metrics,
             )
 
-        if self._params and self._writer:
-            self._writer.add_hparams(
-                self._params,
-                metrics,
-                name=self._experiment_name,
-                global_step=epoch,
-            )
+        # if self._params and self._writer:
+        #     self._writer.add_hparams(
+        #         self._params,
+        #         metrics,
+        #         name=self._experiment_name,
+        #         global_step=epoch,
+        #     )
 
         # initialize metrics buffer
         self._metrics_buffer = {}
