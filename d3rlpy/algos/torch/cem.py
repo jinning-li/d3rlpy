@@ -207,7 +207,7 @@ class CEM:
         top_samples = samples[topk]
         return top_samples
 
-    def command(self, state, choose_best=False):
+    def command(self, state, choose_best=False, get_log_probs=False):
         if not torch.is_tensor(state):
             state = torch.tensor(state)
         # state = state.to(dtype=self.dtype, device=self.d)
@@ -240,7 +240,11 @@ class CEM:
         # u = top_sample[0, self._slice_control(0)] # TODO: add traj
         u = top_sample[0]
 
-        return u
+        if get_log_probs:
+            log_probs = self.action_distribution.log_prob(u).unsqueeze(1)
+            return u, log_probs
+        else:
+            return u
 
 
 def run_cem(

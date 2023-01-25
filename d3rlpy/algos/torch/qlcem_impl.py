@@ -106,8 +106,8 @@ class QLCEMBaseImpl(ContinuousQFunctionMixin, TorchImplBase, metaclass=ABCMeta):
             num_elite=5,
             horizon=1, 
             device=self._device, 
-            u_max=torch.tensor(1, dtype=torch.double, device=self.device), 
-            u_min=torch.tensor(-1, dtype=torch.double, device=self.device),
+            u_max=torch.tensor(1., device=self.device), 
+            u_min=torch.tensor(-1., device=self.device),
             init_cov_diag=1,
         )
 
