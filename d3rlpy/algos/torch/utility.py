@@ -7,6 +7,7 @@ from typing_extensions import Protocol
 from ...models.torch import (
     EnsembleContinuousQFunction,
     EnsembleDiscreteQFunction,
+    ValueFunction,
 )
 from ...torch_utility import eval_api, torch_api
 
@@ -17,6 +18,9 @@ class _DiscreteQFunctionProtocol(Protocol):
 
 class _ContinuousQFunctionProtocol(Protocol):
     _q_func: Optional[EnsembleContinuousQFunction]
+
+class _ContinuousVFunctionProtocol(Protocol):
+    _v_func: Optional[ValueFunction]
 
 
 class DiscreteQFunctionMixin:
@@ -67,6 +71,33 @@ class ContinuousQFunctionMixin:
 
         with torch.no_grad():
             values = self._q_func(x, action, "none").cpu().detach().numpy()
+            values = np.transpose(values, [1, 0, 2])
+
+        mean_values = values.mean(axis=1).reshape(-1)
+        stds = np.std(values, axis=1).reshape(-1)
+
+        if with_std:
+            return mean_values, stds
+
+        return mean_values
+
+
+class ContinuousVFunctionMixin:
+    @eval_api
+    @torch_api(scaler_targets=["x"], action_scaler_targets=["action"])
+    def predict_value(
+        self: _ContinuousVFunctionProtocol,
+        x: torch.Tensor,
+        action: torch.Tensor,
+        with_std: bool,
+    ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
+        assert x.ndim > 1, "Input must have batch dimension."
+        assert x.shape[0] == action.shape[0]
+        assert self._v_func is not None
+
+        import pdb;pdb.set_trace()
+        with torch.no_grad():
+            values = self._v_func(x).cpu().detach().numpy()
             values = np.transpose(values, [1, 0, 2])
 
         mean_values = values.mean(axis=1).reshape(-1)

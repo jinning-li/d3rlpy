@@ -17,6 +17,7 @@ BLACK_LIST = [
     "q_function",
     "policy_optim",
     "q_function_optim",
+    "v_function_optim",
 ]  # special properties
 
 

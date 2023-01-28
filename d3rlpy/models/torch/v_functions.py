@@ -21,7 +21,8 @@ class ValueFunction(nn.Module):  # type: ignore
         return cast(torch.Tensor, self._fc(h))
 
     def __call__(self, x: torch.Tensor) -> torch.Tensor:
-        return cast(torch.Tensor, super().__call__(x))
+        return cast(torch.Tensor, self.forward(x))
+        # return cast(torch.Tensor, super().__call__(x))
 
     def compute_error(
         self, observations: torch.Tensor, target: torch.Tensor

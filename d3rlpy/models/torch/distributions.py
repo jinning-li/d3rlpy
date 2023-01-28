@@ -79,6 +79,9 @@ class GaussianDistribution(Distribution):
     def log_prob(self, y: torch.Tensor) -> torch.Tensor:
         return self._dist.log_prob(y).sum(dim=-1, keepdims=True)
 
+    def entropy(self, ) -> torch.Tensor:
+        return self._dist.entropy().sum(dim=-1, keepdims=True)
+
     @property
     def mean(self) -> torch.Tensor:
         return self._mean

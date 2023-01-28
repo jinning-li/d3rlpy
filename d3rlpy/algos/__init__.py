@@ -14,6 +14,7 @@ from .iql import IQL
 from .mopo import MOPO
 from .nfq import NFQ
 from .plas import PLAS, PLASWithPerturbation
+from .ppo import PPO
 from .qlcem import QLCEM
 from .random_policy import DiscreteRandomPolicy, RandomPolicy
 from .sac import SAC, DiscreteSAC
@@ -40,6 +41,7 @@ __all__ = [
     "NFQ",
     "PLAS",
     "PLASWithPerturbation",
+    "PPO",
     "SAC",
     "DiscreteSAC",
     "TD3",
@@ -75,6 +77,7 @@ CONTINUOUS_ALGORITHMS: Dict[str, Type[AlgoBase]] = {
     "iql": IQL,
     "mopo": MOPO,
     "plas": PLASWithPerturbation,
+    "ppo": PPO,
     "sac": SAC,
     "td3": TD3,
     "td3_plus_bc": TD3PlusBC,
