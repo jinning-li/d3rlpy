@@ -1,14 +1,10 @@
-from typing import Any, Dict, Optional, Sequence
+from typing import Any, Dict, Optional, Sequence, Union, List
 
-from ..argument_utility import (
-    ActionScalerArg,
-    EncoderArg,
-    RewardScalerArg,
-    ScalerArg,
-    UseGPUArg,
-    check_encoder,
-    check_use_gpu,
-)
+import numpy as np
+
+from ..argument_utility import (ActionScalerArg, EncoderArg, RewardScalerArg,
+                                ScalerArg, UseGPUArg, check_encoder,
+                                check_use_gpu)
 from ..constants import IMPL_NOT_INITIALIZED_ERROR, ActionSpace
 from ..dataset import TransitionMiniBatch
 from ..gpu import Device
@@ -81,7 +77,6 @@ class PPO(AlgoBase):
 
     """
 
-    _train_step: int
     _actor_learning_rate: float
     _critic_learning_rate: float
     _actor_optim_factory: OptimizerFactory
@@ -132,7 +127,6 @@ class PPO(AlgoBase):
         self._critic_encoder_factory = check_encoder(critic_encoder_factory)
         self._use_gpu = check_use_gpu(use_gpu)
         self._impl = impl
-        self._train_step = 0
         self._eps_clip = eps_clip
         self._policy_entropy_weight = policy_entropy_weight
         self._target_update_freq = target_update_freq
@@ -160,14 +154,17 @@ class PPO(AlgoBase):
 
     def _update(self, batch: TransitionMiniBatch) -> Dict[str, float]:
         assert self._impl is not None, IMPL_NOT_INITIALIZED_ERROR 
-        self._train_step += 1
         actor_loss = self._impl.update_actor(batch)
         critic_loss = self._impl.update_critic(batch)
-        if self._train_step % self._target_update_freq == 0:
-            self._impl.update_actor_target()
-            self._impl.update_critic_target()
-
         return {"critic_loss": critic_loss, "actor_loss": actor_loss}
+
+    def update_target(self) -> None:
+        self._impl.update_actor_target()
+        self._impl.update_critic_target()
 
     def get_action_type(self) -> ActionSpace:
         return ActionSpace.CONTINUOUS
+
+    def predict_value(self, x: Union[np.ndarray, List[Any]]) -> np.ndarray:
+        assert self._impl is not None
+        return self._impl.predict_value(x)

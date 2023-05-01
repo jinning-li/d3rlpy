@@ -19,6 +19,7 @@ class _DiscreteQFunctionProtocol(Protocol):
 class _ContinuousQFunctionProtocol(Protocol):
     _q_func: Optional[EnsembleContinuousQFunction]
 
+
 class _ContinuousVFunctionProtocol(Protocol):
     _v_func: Optional[ValueFunction]
 
@@ -92,10 +93,9 @@ class ContinuousVFunctionMixin:
         with_std: bool,
     ) -> Union[np.ndarray, Tuple[np.ndarray, np.ndarray]]:
         assert x.ndim > 1, "Input must have batch dimension."
-        assert x.shape[0] == action.shape[0]
+        # assert x.shape[0] == action.shape[0]
         assert self._v_func is not None
 
-        import pdb;pdb.set_trace()
         with torch.no_grad():
             values = self._v_func(x).cpu().detach().numpy()
             values = np.transpose(values, [1, 0, 2])

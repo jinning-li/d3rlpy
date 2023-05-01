@@ -24,7 +24,7 @@ from .base import TorchImplBase
 from .utility import ContinuousVFunctionMixin
 
 
-class PPOBaseImpl(ContinuousVFunctionMixin, TorchImplBase, metaclass=ABCMeta):
+class PPOBaseImpl(TorchImplBase, metaclass=ABCMeta):
 
     _actor_learning_rate: float
     _critic_learning_rate: float
@@ -127,9 +127,29 @@ class PPOBaseImpl(ContinuousVFunctionMixin, TorchImplBase, metaclass=ABCMeta):
 
         self._critic_optim.zero_grad()
 
-        loss = self.compute_critic_loss(batch)
+        # loss = self.compute_critic_loss(batch)
+        # v_pred = self._v_func(batch.observations)
+        # old_v_pred = self._old_v_func(batch.observations).detach()
+        # v_pred_clipped = old_v_pred + torch.clamp(
+        #     v_pred - old_v_pred, - self._eps_clip, self._eps_clip)
+        # loss1 = torch.square(v_pred - batch.rewards)
+        # loss2 = torch.square(v_pred_clipped - batch.rewards)
+        # loss = .5 * torch.max(loss1, loss2).mean()
+        
+        v_pred = self._v_func(batch.observations)
+        old_v_pred = self._old_v_func(batch.observations).detach()
+        target = batch.rewards + old_v_pred
+        loss = .5 * torch.square(v_pred - target).mean()
 
+        # v_pred_clipped = old_v_pred + torch.clamp(
+        #     v_pred - old_v_pred, - self._eps_clip, self._eps_clip,
+        # )
+        # loss1 = torch.square(v_pred - target)
+        # loss2 = torch.square(v_pred_clipped - target)
+        # loss = .5 * torch.max(loss1, loss2).mean()
+        
         loss.backward()
+        # torch.nn.utils.clip_grad_norm_(self._v_func.parameters(), 0.5)
         self._critic_optim.step()
 
         return loss.cpu().detach().numpy()
@@ -152,6 +172,7 @@ class PPOBaseImpl(ContinuousVFunctionMixin, TorchImplBase, metaclass=ABCMeta):
         loss = self.compute_actor_loss(batch)
 
         loss.backward()
+        # torch.nn.utils.clip_grad_norm_(self._policy.parameters(), 0.5)
         self._actor_optim.step()
 
         return loss.cpu().detach().numpy()
@@ -220,20 +241,38 @@ class PPOImpl(PPOBaseImpl):
         
         dist = self._policy.dist(batch.observations)
         log_probs = dist.log_prob(batch.actions)
-        dist_entropy = log_probs
+        # dist_entropy = - log_probs
+        dist_entropy = dist.entropy()
         assert log_probs.shape == dist_entropy.shape
 
         old_dist = self._old_policy.dist(batch.observations)
         old_log_probs = old_dist.log_prob(batch.actions).detach()
-        old_values = self._old_v_func(batch.observations)
-        advantages = (batch.rewards - old_values).detach()  
+        # self._old_v_func.eval()
+        # old_values = self._old_v_func(batch.observations)
+        # rewards = batch.rewards
+        # advantages = (rewards - old_values).detach()  
+        advantages = batch.rewards
+        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-7)
+        
 
         ratios = torch.exp(log_probs - old_log_probs)
         surr1 = ratios * advantages
-        surr2 = torch.clamp(ratios, 1 - self._eps_clip, 1 + self._eps_clip) * advantages
+        surr2 = torch.clamp(ratios, 1. - self._eps_clip, 1. + self._eps_clip) * advantages
 
         loss = - torch.min(surr1, surr2) - self._policy_entropy_weight * dist_entropy
+        # # loss = torch.clamp(loss, -50., 50.)
+        # if loss.mean() > 1e5:
+        #     import pdb;pdb.set_trace()
         return loss.mean()
 
     def _sample_action(self, x: torch.Tensor) -> torch.Tensor:
         return self._predict_best_action(x)
+
+    @eval_api
+    @torch_api(scaler_targets=["x"])
+    def predict_value(
+        self, x: torch.Tensor,
+    ) -> np.ndarray:
+        with torch.no_grad():
+            values = self._old_v_func(x).cpu().detach().numpy()
+        return values

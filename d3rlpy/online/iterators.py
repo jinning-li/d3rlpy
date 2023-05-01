@@ -105,6 +105,8 @@ def train_single_env(
     n_steps_per_epoch: int = 10000,
     update_interval: int = 1,
     update_start_step: int = 0,
+    update_steps_each_epoch: int = 1,
+    is_ppo_style: bool = False,
     random_steps: int = 0,
     eval_env: Optional[gym.Env] = None,
     eval_epsilon: float = 0.0,
@@ -226,6 +228,11 @@ def train_single_env(
                 clip_episode = terminal
 
             # store observation
+            if is_ppo_style:
+                next_val = algo.predict_value([next_observation]).item()
+                val = algo.predict_value([observation]).item()
+                reward = reward + 0.99 * next_val - val
+
             buffer.append(
                 observation=observation,
                 action=action,
@@ -250,22 +257,26 @@ def train_single_env(
 
             if total_step > update_start_step and len(buffer) > algo.batch_size:
                 if total_step % update_interval == 0:
-                    # sample mini-batch
-                    with logger.measure_time("sample_batch"):
-                        batch = buffer.sample(
-                            batch_size=algo.batch_size,
-                            n_frames=algo.n_frames,
-                            n_steps=algo.n_steps,
-                            gamma=algo.gamma,
-                        )
+                    for _ in range(update_steps_each_epoch):
+                        # sample mini-batch
+                        with logger.measure_time("sample_batch"):
+                            batch = buffer.sample(
+                                batch_size=algo.batch_size,
+                                n_frames=algo.n_frames,
+                                n_steps=algo.n_steps,
+                                gamma=algo.gamma,
+                            )
 
-                    # update parameters
-                    with logger.measure_time("algorithm_update"):
-                        loss = algo.update(batch)
+                        # update parameters
+                        with logger.measure_time("algorithm_update"):
+                            loss = algo.update(batch)
 
-                    # record metrics
-                    for name, val in loss.items():
-                        logger.add_metric(name, val)
+                        # record metrics
+                        for name, val in loss.items():
+                            logger.add_metric(name, val)
+                    if is_ppo_style:
+                        algo.update_target()
+                        # buffer.clear()
 
             # call callback if given
             if callback:

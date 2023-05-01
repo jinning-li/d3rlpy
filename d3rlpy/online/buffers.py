@@ -250,6 +250,13 @@ class ReplayBuffer(BasicSampleMixin, Buffer):
         self._prev_reward = 0.0
         self._prev_terminal = 0.0
         self._prev_transition = None
+    
+    def clear(self):
+        self._prev_observation = None
+        self._prev_action = None
+        self._prev_reward = 0.0
+        self._prev_terminal = 0.0
+        self._prev_transition = None
 
     def append(
         self,

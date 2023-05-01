@@ -136,6 +136,9 @@ class SquashedGaussianDistribution(Distribution):
     def _log_prob_from_raw_y(self, raw_y: torch.Tensor) -> torch.Tensor:
         jacob = 2 * (math.log(2) - raw_y - F.softplus(-2 * raw_y))
         return (self._dist.log_prob(raw_y) - jacob).sum(dim=-1, keepdims=True)
+    
+    def entropy(self) -> torch.Tensor:
+        return self._dist.entropy().sum(dim=-1, keepdims=True)
 
     @property
     def mean(self) -> torch.Tensor:
